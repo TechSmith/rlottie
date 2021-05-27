@@ -302,7 +302,7 @@ std::unique_ptr<Animation> Animation::loadFromFile(const std::string &path,
 
     auto composition = model::loadFromFile(path, cachePolicy);
     if (composition) {
-        auto animation = std::unique_ptr<Animation>(new Animation);
+        auto animation = std::make_unique<Animation>();
         animation->d->init(std::move(composition));
         return animation;
     }
