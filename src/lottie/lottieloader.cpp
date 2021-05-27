@@ -122,7 +122,7 @@ std::shared_ptr<model::Composition> model::loadFromFile(const std::string &path,
     }
 
     std::ifstream f;
-    f.open(path);
+    f.open(path, std::ios_base::in | std::ios_base::binary);
 
     if (!f.is_open()) {
         vCritical << "failed to open file = " << path.c_str();
