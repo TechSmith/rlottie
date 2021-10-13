@@ -24,6 +24,13 @@
 #include <fstream>
 #include <sstream>
 
+#ifdef _WIN32
+   #define WIN32_LEAN_AND_MEAN  // Exclude rarely-used stuff from Windows headers
+   #define NOMINMAX
+   #include <windows.h>
+   #include <vector>
+#endif
+
 #include "lottiemodel.h"
 
 using namespace rlottie::internal;
@@ -113,6 +120,38 @@ void model::configureModelCacheSize(size_t cacheSize)
     ModelCache::instance().configureCacheSize(cacheSize);
 }
 
+namespace 
+{
+#ifdef _WIN32
+
+   std::wstring fromUTF8(const char* src)
+   {
+       std::vector<wchar_t> buf(MultiByteToWideChar(CP_UTF8, 0, src, -1, 0, 0));
+       MultiByteToWideChar(CP_UTF8, 0, src, -1, &buf[0], (int)buf.size());
+       return &buf[0];
+   }
+
+   std::wstring decodeFilename(const char* utf8)
+   {
+       return fromUTF8(utf8);
+   }
+
+#else
+
+   const char* decodeFilename(const char* utf8)
+   {
+       return utf8;
+   }
+
+#endif
+
+   void fileOpen(std::ifstream &file, const char *filename,
+                 std::ios_base::openmode mode)
+   {
+       file.open(decodeFilename(filename), mode);
+   }
+}
+
 std::shared_ptr<model::Composition> model::loadFromFile(const std::string &path,
                                                         bool cachePolicy)
 {
@@ -122,7 +161,7 @@ std::shared_ptr<model::Composition> model::loadFromFile(const std::string &path,
     }
 
     std::ifstream f;
-    f.open(path);
+    fileOpen(f, path.c_str(), std::ios::in);
 
     if (!f.is_open()) {
         vCritical << "failed to open file = " << path.c_str();
