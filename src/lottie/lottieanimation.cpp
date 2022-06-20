@@ -70,6 +70,8 @@ public:
     const MarkerList &markers() const { return mModel->markers(); }
     void              setValue(const std::string &keypath, LOTVariant &&value);
     void              removeFilter(const std::string &keypath, Property prop);
+    std::vector<Color> colorPalette() const;
+    void setReplacementColors(const std::vector<Color>& replacementColors);
 
 private:
     mutable LayerInfoList                  mLayerList;
@@ -77,6 +79,7 @@ private:
     SharedRenderTask                       mTask;
     std::atomic<bool>                      mRenderInProgress;
     std::unique_ptr<renderer::Composition> mRenderer{nullptr};
+    std::vector<model::Color> mReplacementColors;
 };
 
 void AnimationImpl::setValue(const std::string &keypath, LOTVariant &&value)
@@ -108,6 +111,9 @@ bool AnimationImpl::update(size_t frameNo, const VSize &size,
 Surface AnimationImpl::render(size_t frameNo, const Surface &surface,
                               bool keepAspectRatio)
 {
+   // get lock mutex
+   // set palette
+    model::Color::s_ColorPalette = mReplacementColors;
     bool renderInProgress = mRenderInProgress.load();
     if (renderInProgress) {
         vCritical << "Already Rendering Scheduled for this Animation";
@@ -130,6 +136,31 @@ void AnimationImpl::init(std::shared_ptr<model::Composition> composition)
     mModel = composition.get();
     mRenderer = std::make_unique<renderer::Composition>(composition);
     mRenderInProgress = false;
+}
+
+std::vector<Color> AnimationImpl::colorPalette() const
+{
+   std::vector<Color> result;
+   for ( const auto & color :  mModel->mColorPalette)
+   {
+      result.emplace_back(Color(color.r, color.g, color.b));
+   }
+   return result;
+}
+
+void AnimationImpl::setReplacementColors(const std::vector<Color>& replacementColors)
+{
+   std::vector<model::Color> updatedReplacementColors;
+   for ( const auto & color :  replacementColors)
+   {
+      updatedReplacementColors.emplace_back(model::Color(color.r(), color.g(), color.b()));
+   }
+   if ( updatedReplacementColors != mReplacementColors )
+   {
+      mReplacementColors = updatedReplacementColors;
+      mRenderer->clearCache();
+   }
+
 }
 
 #ifdef LOTTIE_THREAD_SUPPORT
@@ -431,6 +462,16 @@ void Animation::setValue(Point_Type, Property prop, const std::string &keypath,
                          std::function<Point(const FrameInfo &)> &&value)
 {
     d->setValue(keypath, LOTVariant(prop, value));
+}
+
+std::vector<Color> Animation::colorPalette() const
+{
+   return d->colorPalette();
+}
+
+void Animation::setReplacementColors(const std::vector<Color>& replacementColors)
+{
+   d->setReplacementColors(replacementColors);
 }
 
 Animation::~Animation() = default;

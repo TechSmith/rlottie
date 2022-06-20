@@ -480,6 +480,9 @@ public:
         setValue(MapType<std::integral_constant<Property, prop>>{}, prop, keypath, value);
     }
 
+    std::vector<Color> colorPalette() const;
+    void setReplacementColors(const std::vector<Color>& replacementColors);
+   
     /**
      *  @brief default destructor
      *
