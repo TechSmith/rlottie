@@ -8,7 +8,8 @@
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
 
- * The above copyright notice and this permission notice shall be included in all
+ * The above copyright notice and this permission notice shall be included in
+ all
  * copies or substantial portions of the Software.
 
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
@@ -21,9 +22,11 @@
  */
 
 #include "lottiemodel.h"
+
 #include <cassert>
 #include <iterator>
 #include <stack>
+
 #include "vimageloader.h"
 #include "vline.h"
 
@@ -248,7 +251,7 @@ void model::Gradient::populate(VGradientStops &stops, int frameNo)
 {
     model::Gradient::Data gradData = mGradient.value(frameNo);
     auto                  size = gradData.mGradient.size();
-    float *               ptr = gradData.mGradient.data();
+    float                *ptr = gradData.mGradient.data();
     int                   colorPoints = mColorPoints;
     if (colorPoints == -1) {  // for legacy bodymovin (ref: lottie-android)
         colorPoints = int(size / 4);
@@ -260,7 +263,8 @@ void model::Gradient::populate(VGradientStops &stops, int frameNo)
         float        colorStop = ptr[0];
         model::Color color = model::Color(ptr[1], ptr[2], ptr[3]);
         if (opacityArraySize) {
-            float opacity = getOpacityAtPosition(opacityPtr, opacityArraySize, colorStop);
+            float opacity =
+                getOpacityAtPosition(opacityPtr, opacityArraySize, colorStop);
             stops.push_back(std::make_pair(colorStop, color.toColor(opacity)));
         } else {
             stops.push_back(std::make_pair(colorStop, color.toColor()));
@@ -269,16 +273,21 @@ void model::Gradient::populate(VGradientStops &stops, int frameNo)
     }
 }
 
-float model::Gradient::getOpacityAtPosition(float *opacities, size_t opacityArraySize, float position)
+float model::Gradient::getOpacityAtPosition(float *opacities,
+                                            size_t opacityArraySize,
+                                            float  position)
 {
-    for (size_t i = 2; i < opacityArraySize; i += 2)
-    {
+    for (size_t i = 2; i < opacityArraySize; i += 2) {
         float lastPosition = opacities[i - 2];
         float thisPosition = opacities[i];
         if (opacities[i] >= position) {
-            float progress = (position - lastPosition) / (thisPosition - lastPosition);
-            progress = progress < 0.0f ? 0.0f : 1.0f < progress ? 1.0f : progress; //clamp(progress, 0, 1)
-            return opacities[i - 1] + progress * (opacities[i + 1] - opacities[i - 1]);
+            float progress =
+                (position - lastPosition) / (thisPosition - lastPosition);
+            progress = progress < 0.0f   ? 0.0f
+                       : 1.0f < progress ? 1.0f
+                                         : progress;  // clamp(progress, 0, 1)
+            return opacities[i - 1] +
+                   progress * (opacities[i + 1] - opacities[i - 1]);
         }
     }
     return 0.0f;
@@ -364,4 +373,4 @@ std::vector<LayerInfo> model::Composition::layerInfoList() const
     return result;
 }
 
-std::vector<model::Color> model::Color::s_ColorPalette;
+std::vector<model::Color> model::Color::s_ReplacementColors;

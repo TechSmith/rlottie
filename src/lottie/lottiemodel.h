@@ -30,6 +30,7 @@
 #include <memory>
 #include <unordered_map>
 #include <vector>
+
 #include "varenaalloc.h"
 #include "vbezier.h"
 #include "vbrush.h"
@@ -77,16 +78,17 @@ public:
     }
     friend inline Color operator+(const Color &c1, const Color &c2);
     friend inline Color operator-(const Color &c1, const Color &c2);
-    bool operator==(const Color color) const
+    bool                operator==(const Color color) const
     {
-       return r == color.r && g == color.g && b == color.b;
+        return r == color.r && g == color.g && b == color.b;
     }
+
 public:
-    float r{1};
-    float g{1};
-    float b{1};
-    int paletteNumber{-1};
-    static std::vector<Color> s_ColorPalette;
+    float                     r{1};
+    float                     g{1};
+    float                     b{1};
+    int                       paletteNumber{-1};
+    static std::vector<Color> s_ReplacementColors;
 };
 
 inline Color operator-(const Color &c1, const Color &c2)
@@ -117,8 +119,7 @@ struct PathData {
     {
         result.reset();
         // test for empty animation data.
-        if (start.mPoints.empty() || end.mPoints.empty())
-        {
+        if (start.mPoints.empty() || end.mPoints.empty()) {
             return;
         }
         auto size = std::min(start.mPoints.size(), end.mPoints.size());
@@ -294,7 +295,7 @@ public:
     explicit Property(T value) { construct(impl_.value_, std::move(value)); }
 
     const Animation &animation() const { return *(impl_.animation_.get()); }
-    const T &        value() const { return impl_.value_; }
+    const T         &value() const { return impl_.value_; }
 
     Animation &animation()
     {
@@ -334,15 +335,14 @@ public:
     T value(int frameNo) const
     {
         auto result = isStatic() ? value() : animation().value(frameNo);
-       if constexpr ( std::is_same<T, Color>::value )
-       {
-          if ( result.paletteNumber >= 0 && result.paletteNumber < Color::s_ColorPalette.size() )
-             return Color::s_ColorPalette[result.paletteNumber];
-
-       }
+        if constexpr (std::is_same<T, Color>::value) {
+            if (result.paletteNumber >= 0 &&
+                result.paletteNumber < Color::s_ReplacementColors.size())
+                return Color::s_ReplacementColors[result.paletteNumber];
+        }
         return result;
     }
-   
+
     // special function only for type T=PathData
     template <typename forT = PathData>
     auto value(int frameNo, VPath &path) const ->
@@ -576,13 +576,13 @@ public:
     long                                     mEndFrame{0};
     float                                    mFrameRate{60};
     BlendMode                                mBlendMode{BlendMode::Normal};
-    Layer *                                  mRootLayer{nullptr};
+    Layer                                   *mRootLayer{nullptr};
     std::unordered_map<std::string, Asset *> mAssets;
 
     std::vector<Marker> mMarkers;
     VArenaAlloc         mArenaAlloc{2048};
     Stats               mStats;
-   
+
     std::vector<Color> mColorPalette;
 };
 
@@ -658,7 +658,7 @@ private:
         VMatrix mMatrix;
     };
     union details {
-        Data *     mData{nullptr};
+        Data      *mData{nullptr};
         StaticData mStaticData;
         details(){};
         details(const details &) = delete;
@@ -676,7 +676,7 @@ public:
 
 public:
     std::vector<Object *> mChildren;
-    Transform *           mTransform{nullptr};
+    Transform            *mTransform{nullptr};
 };
 
 class Layer : public Group {
@@ -690,18 +690,18 @@ public:
         Text = 5
     };
     Layer() : Group(Object::Type::Layer) {}
-    bool    hasRoundedCorner() const noexcept { return mHasRoundedCorner; }
-    bool    hasPathOperator() const noexcept { return mHasPathOperator; }
-    bool    hasGradient() const noexcept { return mHasGradient; }
-    bool    hasMask() const noexcept { return mHasMask; }
-    bool    hasRepeater() const noexcept { return mHasRepeater; }
-    int     id() const noexcept { return mId; }
-    int     parentId() const noexcept { return mParentId; }
-    bool    hasParent() const noexcept { return mParentId != -1; }
-    int     inFrame() const noexcept { return mInFrame; }
-    int     outFrame() const noexcept { return mOutFrame; }
-    int     startFrame() const noexcept { return mStartFrame; }
-    Color   solidColor() const noexcept
+    bool  hasRoundedCorner() const noexcept { return mHasRoundedCorner; }
+    bool  hasPathOperator() const noexcept { return mHasPathOperator; }
+    bool  hasGradient() const noexcept { return mHasGradient; }
+    bool  hasMask() const noexcept { return mHasMask; }
+    bool  hasRepeater() const noexcept { return mHasRepeater; }
+    int   id() const noexcept { return mId; }
+    int   parentId() const noexcept { return mParentId; }
+    bool  hasParent() const noexcept { return mParentId != -1; }
+    int   inFrame() const noexcept { return mInFrame; }
+    int   outFrame() const noexcept { return mOutFrame; }
+    int   startFrame() const noexcept { return mStartFrame; }
+    Color solidColor() const noexcept
     {
         return mExtra ? mExtra->mSolidColor : Color();
     }
@@ -723,8 +723,8 @@ public:
         Color               mSolidColor;
         std::string         mPreCompRefId;
         Property<float>     mTimeRemap; /* "tm" */
-        Composition *       mCompRef{nullptr};
-        Asset *             mAsset{nullptr};
+        Composition        *mCompRef{nullptr};
+        Asset              *mAsset{nullptr};
         std::vector<Mask *> mMasks;
     };
 
@@ -834,8 +834,9 @@ public:
     void update(std::unique_ptr<VGradient> &grad, int frameNo);
 
 private:
-    void populate(VGradientStops &stops, int frameNo);
-    float getOpacityAtPosition(float *opacities, size_t opacityArraySize, float position);
+    void  populate(VGradientStops &stops, int frameNo);
+    float getOpacityAtPosition(float *opacities, size_t opacityArraySize,
+                               float position);
 
 public:
     int                      mGradientType{1};    /* "t" Linear=1 , Radial = 2*/
@@ -919,9 +920,10 @@ public:
 class RoundedCorner : public Object {
 public:
     RoundedCorner() : Object(Object::Type::RoundedCorner) {}
-    float radius(int frameNo) const { return mRadius.value(frameNo);}
+    float radius(int frameNo) const { return mRadius.value(frameNo); }
+
 public:
-    Property<float>   mRadius{0};
+    Property<float> mRadius{0};
 };
 
 class Rect : public Shape {
@@ -929,17 +931,19 @@ public:
     Rect() : Shape(Object::Type::Rect) {}
     float roundness(int frameNo)
     {
-        return mRoundedCorner ? mRoundedCorner->radius(frameNo) :
-                                mRound.value(frameNo);
+        return mRoundedCorner ? mRoundedCorner->radius(frameNo)
+                              : mRound.value(frameNo);
     }
 
     bool roundnessChanged(int prevFrame, int curFrame)
     {
-        return mRoundedCorner ? mRoundedCorner->mRadius.changed(prevFrame, curFrame) :
-                        mRound.changed(prevFrame, curFrame);
+        return mRoundedCorner
+                   ? mRoundedCorner->mRadius.changed(prevFrame, curFrame)
+                   : mRound.changed(prevFrame, curFrame);
     }
+
 public:
-    RoundedCorner*    mRoundedCorner{nullptr};
+    RoundedCorner    *mRoundedCorner{nullptr};
     Property<VPointF> mPos;
     Property<VPointF> mSize;
     Property<float>   mRound{0};
@@ -1005,7 +1009,7 @@ public:
     void   markProcessed() { mProcessed = true; }
 
 public:
-    Group *         mContent{nullptr};
+    Group          *mContent{nullptr};
     Transform       mTransform;
     Property<float> mCopies{0};
     Property<float> mOffset{0};
