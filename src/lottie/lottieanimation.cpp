@@ -111,10 +111,15 @@ bool AnimationImpl::update(size_t frameNo, const VSize &size,
 Surface AnimationImpl::render(size_t frameNo, const Surface &surface,
                               bool keepAspectRatio)
 {
+    static std::atomic_flag  sReplacementColorsLock;
+// model::Color::s_ReplacementColors is global.  Make sure only one thread renders at a time.
+    while ( sReplacementColorsLock.test_and_set() ) {}
+
     model::Color::s_ReplacementColors = mReplacementColors;
     bool renderInProgress = mRenderInProgress.load();
     if (renderInProgress) {
         vCritical << "Already Rendering Scheduled for this Animation";
+        sReplacementColorsLock.clear();
         return surface;
     }
 
@@ -125,6 +130,7 @@ Surface AnimationImpl::render(size_t frameNo, const Surface &surface,
         keepAspectRatio);
     mRenderer->render(surface);
     mRenderInProgress.store(false);
+    sReplacementColorsLock.clear();
 
     return surface;
 }
