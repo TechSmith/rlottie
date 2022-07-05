@@ -372,3 +372,5 @@ std::vector<LayerInfo> model::Composition::layerInfoList() const
 
     return result;
 }
+
+std::vector<model::Color> model::Color::s_ReplacementColors;
