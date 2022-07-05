@@ -153,7 +153,11 @@ void AnimationImpl::setReplacementColors( const std::vector<Color> &replacementC
   {
       updatedReplacementColors.emplace_back( model::Color(color.r(), color.g(), color.b()) );
   }
-  mReplacementColors = updatedReplacementColors;
+  if (updatedReplacementColors != mReplacementColors)
+  {
+     mReplacementColors = updatedReplacementColors;
+     mRenderer->setDirty();
+  }
 }
 
 #ifdef LOTTIE_THREAD_SUPPORT
