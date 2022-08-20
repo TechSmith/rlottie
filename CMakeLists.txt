@@ -89,7 +89,7 @@ target_link_libraries(rlottie
                         "${CMAKE_THREAD_LIBS_INIT}"
                      )
 
-if (NOT APPLE AND NOT WIN32)
+if (NOT APPLE AND NOT WIN32 AND NOT EMSCRIPTEN)
     target_link_libraries(rlottie
                         PRIVATE
                             "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/rlottie.expmap"
@@ -102,7 +102,12 @@ if (LOTTIE_MODULE)
 endif()
 
 if (NOT LOTTIE_ASAN)
-    if(APPLE)
+    if(EMSCRIPTEN)
+        target_link_libraries(rlottie
+                            PUBLIC
+                                 "-Wl"
+                              )
+    elseif(APPLE)
         target_link_libraries(rlottie
                             PUBLIC
                                  "-Wl, -undefined error"
@@ -135,8 +140,10 @@ if (NOT LIB_INSTALL_DIR)
     set (LIB_INSTALL_DIR "/usr/lib")
 endif (NOT LIB_INSTALL_DIR)
 
-generate_dll_rc_filepath(rlottie ${DLL_PRODUCT_NUMBER} ${DLL_PRODUCT_VERSION} ${DLL_BUILD_NUMBER} 2021)
-target_sources(rlottie PRIVATE ${rlottie_RCFILEPATH})
+if(NOT EMSCRIPTEN)
+    generate_dll_rc_filepath(rlottie ${DLL_PRODUCT_NUMBER} ${DLL_PRODUCT_VERSION} ${DLL_BUILD_NUMBER} 2021)
+    target_sources(rlottie PRIVATE ${rlottie_RCFILEPATH})
+endif()
 
 #declare source and include files
 add_subdirectory(inc)
