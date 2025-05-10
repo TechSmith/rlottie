@@ -1024,6 +1024,20 @@ public:
     };
     enum class TrimType { Simultaneously, Individually };
     Trim() : Object(Object::Type::Trim) {}
+
+    void updateTrimStartValue(float start)
+    {
+        mStart.value() = start;
+    }
+
+    void updateTrimEndValue(VPointF pos)
+    {
+        for (auto &keyFrame : mEnd.animation().frames_) {
+            keyFrame.value_.start_ = pos.x();
+            keyFrame.value_.end_ = pos.y();
+        }
+    }
+
     /*
      * if start > end vector trims the path as a loop ( 2 segment)
      * if start < end vector trims the path without loop ( 1 segment).
@@ -1152,7 +1166,7 @@ std::shared_ptr<model::Composition> loadFromData(std::string jsonData,
                                                  std::string resourcePath,
                                                  ColorFilter filter);
 
-std::shared_ptr<model::Composition> parse(char *str, std::string dir_path,
+std::shared_ptr<model::Composition> parse(char *str, size_t length, std::string dir_path,
                                           ColorFilter filter = {});
 
 }  // namespace model
