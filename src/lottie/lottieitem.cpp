@@ -72,6 +72,17 @@ static bool strokeProp(rlottie::Property prop)
     }
 }
 
+static bool trimProp(rlottie::Property prop)
+{
+    switch (prop) {
+    case rlottie::Property::TrimStart:
+    case rlottie::Property::TrimEnd:
+        return true;
+    default:
+        return false;
+    }
+}
+
 static renderer::Layer *createLayerItem(model::Layer *layerData,
                                         VArenaAlloc * allocator)
 {
@@ -109,6 +120,7 @@ renderer::Composition::Composition(std::shared_ptr<model::Composition> model)
 void renderer::Composition::setValue(const std::string &keypath,
                                      LOTVariant &       value)
 {
+    mHasDynamicValue = true;
     LOTKeyPath key(keypath);
     mRootLayer->resolveKeyPath(key, 0, value);
 }
@@ -117,7 +129,7 @@ bool renderer::Composition::update(int frameNo, const VSize &size,
                                    bool keepAspectRatio)
 {
     // check if cached frame is same as requested frame.
-    if ((mViewSize == size) && (mCurFrameNo == frameNo) &&
+    if (!mHasDynamicValue && (mViewSize == size) && (mCurFrameNo == frameNo) &&
         (mKeepAspectRatio == keepAspectRatio))
         return false;
 
@@ -467,6 +479,7 @@ renderer::CompLayer::CompLayer(model::Layer *layerModel, VArenaAlloc *allocator)
     // as lottie model keeps the data in front-toback-order.
     for (auto it = mLayerData->mChildren.crbegin();
          it != mLayerData->mChildren.rend(); ++it) {
+        if ((*it)->type() != model::Object::Type::Layer) continue;
         auto model = static_cast<model::Layer *>(*it);
         auto item = createLayerItem(model, allocator);
         if (item) mLayers.push_back(item);
@@ -836,7 +849,7 @@ renderer::ShapeLayer::ShapeLayer(model::Layer *layerData,
 
 void renderer::ShapeLayer::updateContent()
 {
-    mRoot->update(frameNo(), combinedMatrix(), combinedAlpha(), flag());
+    mRoot->update(frameNo(), combinedMatrix(), 1.0f , flag());
 
     if (mLayerData->hasPathOperator()) {
         mRoot->applyTrim();
@@ -861,6 +874,27 @@ renderer::DrawableList renderer::ShapeLayer::renderList()
     if (mDrawableList.empty()) return {};
 
     return {mDrawableList.data(), mDrawableList.size()};
+}
+
+void renderer::ShapeLayer::render(VPainter *painter, const VRle &inheritMask,
+                                 const VRle &matteRle, SurfaceCache &cache)
+{
+    if (vIsZero(combinedAlpha())) return;
+
+    if (vCompare(combinedAlpha(), 1.0)) {
+        Layer::render(painter, inheritMask, matteRle, cache);
+    } else {
+        //do offscreen rendering
+        VSize    size = painter->clipBoundingRect().size();
+        VPainter srcPainter;
+        VBitmap srcBitmap = cache.make_surface(size.width(), size.height());
+        srcPainter.begin(&srcBitmap);
+        Layer::render(&srcPainter, inheritMask, matteRle, cache);
+        srcPainter.end();
+        painter->drawBitmap(VPoint(), srcBitmap,
+                            uint8_t(combinedAlpha() * 255.0f));
+        cache.release_surface(srcBitmap);
+    }
 }
 
 bool renderer::Group::resolveKeyPath(LOTKeyPath &keyPath, uint32_t depth,
@@ -1344,6 +1378,21 @@ bool renderer::GradientStroke::updateContent(int frameNo, const VMatrix &matrix,
     return !vIsZero(combinedAlpha);
 }
 
+bool renderer::Trim::resolveKeyPath(LOTKeyPath &keyPath, uint32_t depth,
+                                      LOTVariant &value)
+{
+    if (!keyPath.matches(mModel.name(), depth)) {
+        return false;
+    }
+
+    if (keyPath.fullyResolvesTo(mModel.name(), depth) &&
+        trimProp(value.property())) {
+        mModel.filter()->addValue(value);
+        return true;
+    }
+    return false;
+}
+
 void renderer::Trim::update(int frameNo, const VMatrix & /*parentMatrix*/,
                             float /*parentAlpha*/, const DirtyFlag & /*flag*/)
 {
@@ -1351,7 +1400,7 @@ void renderer::Trim::update(int frameNo, const VMatrix & /*parentMatrix*/,
 
     if (mCache.mFrameNo == frameNo) return;
 
-    model::Trim::Segment segment = mData->segment(frameNo);
+    model::Trim::Segment segment = mModel.segment(frameNo);
 
     if (!(vCompare(mCache.mSegment.start, segment.start) &&
           vCompare(mCache.mSegment.end, segment.end))) {

@@ -245,20 +245,23 @@ public:
 
     T value(int frameNo) const
     {
-        if (frames_.front().start_ >= frameNo)
-            return frames_.front().value_.start_;
-        if (frames_.back().end_ <= frameNo) return frames_.back().value_.end_;
+        if (!frames_.empty()) {
+            if (frames_.front().start_ >= frameNo)
+                return frames_.front().value_.start_;
+            if (frames_.back().end_ <= frameNo) return frames_.back().value_.end_;
 
-        for (const auto &keyFrame : frames_) {
-            if (frameNo >= keyFrame.start_ && frameNo < keyFrame.end_)
-                return keyFrame.value(frameNo);
+            for (const auto &keyFrame : frames_) {
+                if (frameNo >= keyFrame.start_ && frameNo < keyFrame.end_)
+                    return keyFrame.value(frameNo);
+            }
         }
         return {};
     }
 
     float angle(int frameNo) const
     {
-        if ((frames_.front().start_ >= frameNo) ||
+        if (frames_.empty() ||
+            (frames_.front().start_ >= frameNo) ||
             (frames_.back().end_ <= frameNo))
             return 0;
 
@@ -271,6 +274,8 @@ public:
 
     bool changed(int prevFrame, int curFrame) const
     {
+        if (frames_.empty()) return false;
+
         auto first = frames_.front().start_;
         auto last = frames_.back().end_;
 
@@ -1024,6 +1029,20 @@ public:
     };
     enum class TrimType { Simultaneously, Individually };
     Trim() : Object(Object::Type::Trim) {}
+
+    void updateTrimStartValue(float start)
+    {
+        mStart.value() = start;
+    }
+
+    void updateTrimEndValue(VPointF pos)
+    {
+        for (auto &keyFrame : mEnd.animation().frames_) {
+            keyFrame.value_.start_ = pos.x();
+            keyFrame.value_.end_ = pos.y();
+        }
+    }
+
     /*
      * if start > end vector trims the path as a loop ( 2 segment)
      * if start < end vector trims the path without loop ( 1 segment).
@@ -1152,7 +1171,7 @@ std::shared_ptr<model::Composition> loadFromData(std::string jsonData,
                                                  std::string resourcePath,
                                                  ColorFilter filter);
 
-std::shared_ptr<model::Composition> parse(char *str, std::string dir_path,
+std::shared_ptr<model::Composition> parse(char *str, size_t length, std::string dir_path,
                                           ColorFilter filter = {});
 
 }  // namespace model
