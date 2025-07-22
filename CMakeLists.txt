@@ -144,11 +144,6 @@ if (NOT LIB_INSTALL_DIR)
     set (LIB_INSTALL_DIR "/usr/lib")
 endif (NOT LIB_INSTALL_DIR)
 
-if(NOT EMSCRIPTEN)
-    generate_dll_rc_filepath(rlottie ${DLL_PRODUCT_NUMBER} ${DLL_PRODUCT_VERSION} ${DLL_BUILD_NUMBER} 2021)
-    target_sources(rlottie PRIVATE ${rlottie_RCFILEPATH})
-endif()
-
 #declare source and include files
 add_subdirectory(inc)
 add_subdirectory(src)
