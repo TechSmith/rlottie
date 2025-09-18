@@ -68,7 +68,6 @@ RAPIDJSON_DIAG_OFF(effc++)
 #include <windows.h>
 #include <shlwapi.h>
 
-#include <string_view>
 #endif
 
 #ifndef PATH_MAX
@@ -811,7 +810,7 @@ static std::string convertFromBase64(const std::string &str)
 namespace
 {
    #ifdef _WIN32
-   std::wstring ToStdWString( std::string_view str )
+   std::wstring ToStdWString( const std::string& str )
    {
       std::wstring wstr;
       int          nchars = ::MultiByteToWideChar(CP_UTF8, 0, str.data(), (int)str.length(), 0, 0);
@@ -826,7 +825,7 @@ namespace
       return wstr;
    }
 
-   std::string ToStdString( std::wstring_view wstr )
+   std::string ToStdString( const std::wstring& wstr )
    {
        std::string str;
        int         nchars = ::WideCharToMultiByte( CP_UTF8, 0, wstr.data(), (int)wstr.length(), NULL, NULL, NULL, NULL );
@@ -847,7 +846,7 @@ namespace
        std::wstring wpath = ToStdWString( path );
        std::wstring wresolved_path;
        wresolved_path.resize( PATH_MAX );
-       if ( PathCanonicalizeW( wresolved_path.data(), wpath.c_str() ) )
+       if ( PathCanonicalizeW( const_cast<wchar_t *>(wresolved_path.data()), wpath.c_str() ) )
        {
            std::string path = ToStdString(wresolved_path);
            strcpy_s( resolved_path, path.length() * sizeof( char ), path.c_str() );
