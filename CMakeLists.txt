@@ -34,7 +34,6 @@ option(LOTTIE_CACHE "Enable LOTTIE CACHE SUPPORT" ON)
 option(LOTTIE_TEST "Build LOTTIE AUTOTESTS" OFF)
 option(LOTTIE_CCACHE "Enable LOTTIE ccache SUPPORT" OFF)
 option(LOTTIE_ASAN "Compile with asan" OFF)
-option(LOTTIE_STB_TARGET "stb target name for stb_image_loader" stb)
 
 set(LOTTIE_MODULE_PATH "${CMAKE_SHARED_LIBRARY_PREFIX}rlottie-image-loader${CMAKE_SHARED_LIBRARY_SUFFIX}"
     CACHE STRING "Absolute or relative path to dynamic loader plugin.")
@@ -84,7 +83,7 @@ if(WIN32)
    set( OSSPEC_LIBS Shlwapi.lib )
 endif()
 
-target_link_libraries(rlottie PRIVATE ${LOTTIE_STB_TARGET})
+target_link_libraries(rlottie PRIVATE stb)
 
 target_link_libraries(rlottie
                     PUBLIC
