@@ -34,6 +34,7 @@ option(LOTTIE_CACHE "Enable LOTTIE CACHE SUPPORT" ON)
 option(LOTTIE_TEST "Build LOTTIE AUTOTESTS" OFF)
 option(LOTTIE_CCACHE "Enable LOTTIE ccache SUPPORT" OFF)
 option(LOTTIE_ASAN "Compile with asan" OFF)
+option(LOTTIE_STB_TARGET "stb target name for stb_image_loader" stb)
 
 set(LOTTIE_MODULE_PATH "${CMAKE_SHARED_LIBRARY_PREFIX}rlottie-image-loader${CMAKE_SHARED_LIBRARY_SUFFIX}"
     CACHE STRING "Absolute or relative path to dynamic loader plugin.")
@@ -82,6 +83,8 @@ find_package( Threads )
 if(WIN32)
    set( OSSPEC_LIBS Shlwapi.lib )
 endif()
+
+target_link_libraries(rlottie PRIVATE ${LOTTIE_STB_TARGET})
 
 target_link_libraries(rlottie
                     PUBLIC
@@ -154,61 +157,3 @@ if (LOTTIE_TEST)
     enable_testing()
     add_subdirectory(test)
 endif()
-
-SET(PREFIX ${CMAKE_INSTALL_PREFIX})
-SET(EXEC_DIR ${PREFIX})
-SET(LIBDIR ${LIB_INSTALL_DIR})
-SET(INCDIR ${PREFIX}/include)
-
-CONFIGURE_FILE(${PROJECT_NAME}.pc.in ${PROJECT_NAME}.pc)
-INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.pc DESTINATION ${LIB_INSTALL_DIR}/pkgconfig)
-
-
-#install header
-install(FILES
-        inc/rlottie.h
-        inc/rlottie_capi.h
-        inc/rlottiecommon.h
-        DESTINATION include)
-
-#install lib
-install( TARGETS rlottie EXPORT rlottie-targets
-         LIBRARY     DESTINATION    ${LIB_INSTALL_DIR}
-         ARCHIVE     DESTINATION    ${LIB_INSTALL_DIR}
-         INCLUDES    DESTINATION    include
-       )
-
-#install config file.
-
-install( EXPORT rlottie-targets
-         FILE          rlottieTargets.cmake
-         NAMESPACE     rlottie::
-         DESTINATION   ${LIB_INSTALL_DIR}/cmake/rlottie
-       )
-
-
-#Create a ConfigVersion.cmake file
-include(CMakePackageConfigHelpers)
-write_basic_package_version_file(
-    ${CMAKE_CURRENT_BINARY_DIR}/rlottieConfigVersion.cmake
-    VERSION ${PROJECT_VERSION}
-    COMPATIBILITY AnyNewerVersion
-)
-
-configure_package_config_file(${CMAKE_CURRENT_LIST_DIR}/cmake/rlottieConfig.cmake.in
-    ${CMAKE_CURRENT_BINARY_DIR}/rlottieConfig.cmake
-    INSTALL_DESTINATION ${LIB_INSTALL_DIR}/cmake/rlottie
-)
-
-#Install the config, configversion and custom find modules
-install(FILES
-    ${CMAKE_CURRENT_BINARY_DIR}/rlottieConfig.cmake
-    ${CMAKE_CURRENT_BINARY_DIR}/rlottieConfigVersion.cmake
-    DESTINATION ${LIB_INSTALL_DIR}/cmake/rlottie
-)
-
-
-export(EXPORT rlottie-targets FILE ${CMAKE_CURRENT_BINARY_DIR}/rlottieTargets.cmake NAMESPACE rlottie::)
-
-#Register package in user's package registry
-export(PACKAGE rlottie)
