@@ -3,6 +3,20 @@ cmake_minimum_required( VERSION 3.5 )
 #declare project
 project( rlottie VERSION 0.2 LANGUAGES C CXX ASM)
 
+if(MSVC)
+    # Some nested project configurations can resolve the linker as a relative
+    # "link" path (interpreted under the source dir), which breaks DLL linking.
+    if((NOT IS_ABSOLUTE "${CMAKE_LINKER}") OR (NOT EXISTS "${CMAKE_LINKER}"))
+        find_program(RLOTTIE_MSVC_LINKER NAMES link.exe)
+        if(RLOTTIE_MSVC_LINKER)
+            set(CMAKE_LINKER "${RLOTTIE_MSVC_LINKER}")
+            set(CMAKE_LINKER_LINK "${RLOTTIE_MSVC_LINKER}")
+            set(CMAKE_CXX_COMPILER_LINKER "${RLOTTIE_MSVC_LINKER}")
+            set(CMAKE_C_COMPILER_LINKER "${RLOTTIE_MSVC_LINKER}")
+        endif()
+    endif()
+endif()
+
 if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE MinSizeRel)
 endif()
